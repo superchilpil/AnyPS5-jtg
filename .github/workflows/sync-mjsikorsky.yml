@@ -1,0 +1,35 @@
+name: Sync mjsikorsky
+
+on:
+  schedule:
+    - cron: '37 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mjsikorsky-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout mjsikorsky branch
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: mjsikorsky
+
+      - name: Merge mjsikorsky main
+        run: |
+          git remote add mjsikorsky https://github.com/mjsikorsky/anyps5.git
+          git fetch mjsikorsky main
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git merge --no-edit mjsikorsky/main
+          git push origin mjsikorsky
