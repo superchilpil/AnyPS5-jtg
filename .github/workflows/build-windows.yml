@@ -33,7 +33,7 @@ jobs:
 
       - name: Cache WinLibs toolchain
         id: toolchain
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: C:\\winlibs
           key: ${{ env.WINLIBS_ZIP }}
