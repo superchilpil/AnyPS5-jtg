@@ -1,0 +1,78 @@
+name: Build Windows
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  WINLIBS_RELEASE: 15.2.0posix-14.0.0-ucrt-r7
+  WINLIBS_ZIP: winlibs-x86_64-posix-seh-gcc-15.2.0-mingw-w64ucrt-14.0.0-r7.zip
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - name: Cache WinLibs toolchain
+        id: toolchain
+        uses: actions/cache@v5
+        with:
+          path: C:\\winlibs
+          key: ${{ env.WINLIBS_ZIP }}
+
+      - name: Install WinLibs
+        if: steps.toolchain.outputs.cache-hit != 'true'
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/winlibs.zip" "https://github.com/brechtsanders/winlibs_mingw/releases/download/$WINLIBS_RELEASE/$WINLIBS_ZIP"
+          7z x "$RUNNER_TEMP/winlibs.zip" -oC:/winlibs > /dev/null
+
+      - name: Add MinGW to PATH
+        run: echo 'C:\\winlibs\\mingw64\\bin' >> "$GITHUB_PATH"
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja             -DCMAKE_BUILD_TYPE=Release             -DBUILD_TESTING=OFF             -DCMAKE_C_COMPILER=gcc             -DCMAKE_CXX_COMPILER=g++
+
+      - name: Build executables
+        run: cmake --build build --parallel
+
+      - name: Build system libraries
+        run: cmake --build build --target libs --parallel
+
+      - name: Package Windows build
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path package | Out-Null
+          Copy-Item build/core/relinker/relinker.exe package/relinker.exe
+          Copy-Item build/core/libs/nid_patcher.exe package/nid_patcher.exe
+          New-Item -ItemType Directory -Force -Path package/libs | Out-Null
+          Copy-Item build/core/libs/libs/*.prx package/libs/
+          Copy-Item README.md package/README.md
+
+          Compress-Archive -Path package/* -DestinationPath AnyPS5-Windows.zip -Force
+
+      - name: Upload Windows build
+        uses: actions/upload-artifact@v6
+        with:
+          name: AnyPS5-Windows
+          path: AnyPS5-Windows.zip
+          if-no-files-found: error
+          retention-days: 30
