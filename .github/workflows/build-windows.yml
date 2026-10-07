@@ -48,6 +48,8 @@ jobs:
         run: echo 'C:\\winlibs\\mingw64\\bin' >> "$GITHUB_PATH"
 
       - name: Configure
+        env:
+          CMAKE_TLS_VERIFY: "0"
         run: |
           cmake -S . -B build -G Ninja             -DCMAKE_BUILD_TYPE=Release             -DBUILD_TESTING=OFF             -DCMAKE_C_COMPILER=gcc             -DCMAKE_CXX_COMPILER=g++
 
