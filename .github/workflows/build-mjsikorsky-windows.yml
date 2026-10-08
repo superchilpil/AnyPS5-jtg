@@ -1,10 +1,6 @@
 name: Build mjsikorsky Windows
 
 on:
-  push:
-    branches: [mjsikorsky]
-  pull_request:
-    branches: [mjsikorsky]
   workflow_dispatch:
 
 permissions:
