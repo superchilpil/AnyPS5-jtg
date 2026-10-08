@@ -1,8 +1,6 @@
 name: Sync mjsikorsky
 
 on:
-  schedule:
-    - cron: '37 6 * * *'
   workflow_dispatch:
 
 permissions:
